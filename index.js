@@ -16,7 +16,7 @@ app.use(cors({
 const db = new sqlite3.Database(':memory:');
 
 db.serialize(() => {
-    db.run('CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, email TEXT)');
+    db.run('CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, email TEXT, password TEXT)');
 });
 
 app.get('/', (request, response) => {
@@ -26,9 +26,9 @@ app.get('/', (request, response) => {
 });
 
 app.post('/login', (request, response) => {
-    const { nombre, email } = request.body;
-    const sentence = db.prepare('SELECT * FROM users WHERE email = ? AND name = ?');
-    sentence.get([email, nombre], (err, row) => {
+    const { password, email } = request.body;
+    const sentence = db.prepare('SELECT name, email FROM users WHERE email = ? AND password = ?');
+    sentence.get([email, password], (err, row) => {
         if (err) {
             return response.status(400).json({ error: err.message });
         }
@@ -40,7 +40,7 @@ app.post('/login', (request, response) => {
 });
 
 app.get('/users', (req, res) => {
-    db.all("SELECT * FROM users", (err, rows) => {
+    db.all("SELECT name, email FROM users", (err, rows) => {
         if (err) {
             res.json({ success: false });
         }
@@ -48,10 +48,25 @@ app.get('/users', (req, res) => {
     });
 });
 
+app.post('/email', async (req, res) => {
+    const { email } = req.body;
+    const query = "SELECT id FROM users WHERE email = ?";
+    db.get(query, [email], (err, row) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ success: false, message: 'Internal server error' });
+        }
+        if (!row) {
+            return res.status(200).json({ success: false, message: 'User not found' });
+        }
+        res.json({ success: true, data: row });
+    });
+})
+
 app.post('/user', (req, res) => {
-    const { nombre, email } = req.body;
-    const stmt = db.prepare("INSERT INTO users (name, email) VALUES (?, ?)");
-    stmt.run(nombre, email, function(err, data) {
+    const { nombre, email, password } = req.body;
+    const stmt = db.prepare("INSERT INTO users (name, email, password) VALUES (?, ?, ?)");
+    stmt.run(nombre, email, password, function(err, data) {
         if (err) {
             res.json({ success: false });
         } else {
