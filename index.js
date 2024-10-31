@@ -1,7 +1,6 @@
 const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
-const { error } = require('console');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const app = express();
@@ -72,7 +71,6 @@ app.post('/user', (req, res) => {
         } else {
             res.json({ success: true });
         }
-        console.log('data ----->', data);
     });
     stmt.finalize();
 });
